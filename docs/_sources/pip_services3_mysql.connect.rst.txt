@@ -1,0 +1,18 @@
+pip\_services3\_mysql.connect package
+=====================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pip_services3_mysql.connect.MySqlConnectionResolver
+
+Module contents
+---------------
+
+.. automodule:: pip_services3_mysql.connect
+   :members:
+   :undoc-members:
+   :show-inheritance:

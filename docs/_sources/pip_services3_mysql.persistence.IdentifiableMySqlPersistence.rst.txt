@@ -1,0 +1,7 @@
+pip\_services3\_mysql.persistence.IdentifiableMySqlPersistence module
+=====================================================================
+
+.. automodule:: pip_services3_mysql.persistence.IdentifiableMySqlPersistence
+   :members:
+   :undoc-members:
+   :show-inheritance:

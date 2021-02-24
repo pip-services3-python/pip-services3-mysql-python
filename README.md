@@ -11,7 +11,7 @@ The module contains the following packages:
 <a name="links"></a> Quick links:
 
 * [Configuration](https://www.pipservices.org/recipies/configuration)
-* [API Reference](https://pip-services3-python.github.io/pip-services3-mysql-python/index.html)
+* [API Reference](https://pip-services3-python.github.io/pip-services3-mysql-python/)
 * [Change Log](CHANGELOG.md)
 * [Get Help](https://www.pipservices.org/community/help)
 * [Contribute](https://www.pipservices.org/community/contribute)

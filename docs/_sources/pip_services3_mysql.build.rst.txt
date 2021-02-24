@@ -1,0 +1,18 @@
+pip\_services3\_mysql.build package
+===================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pip_services3_mysql.build.DefaultMySqlFactory
+
+Module contents
+---------------
+
+.. automodule:: pip_services3_mysql.build
+   :members:
+   :undoc-members:
+   :show-inheritance:

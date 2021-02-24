@@ -1,0 +1,20 @@
+pip\_services3\_mysql package
+=============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pip_services3_mysql.build
+   pip_services3_mysql.connect
+   pip_services3_mysql.persistence
+
+Module contents
+---------------
+
+.. automodule:: pip_services3_mysql
+   :members:
+   :undoc-members:
+   :show-inheritance:

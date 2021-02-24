@@ -1,0 +1,7 @@
+persistence.MySqlPersistence module
+===================================
+
+.. automodule:: persistence.MySqlPersistence
+   :members:
+   :undoc-members:
+   :show-inheritance:

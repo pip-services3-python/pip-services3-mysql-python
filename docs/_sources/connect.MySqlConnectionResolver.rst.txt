@@ -1,0 +1,7 @@
+connect.MySqlConnectionResolver module
+======================================
+
+.. automodule:: connect.MySqlConnectionResolver
+   :members:
+   :undoc-members:
+   :show-inheritance:

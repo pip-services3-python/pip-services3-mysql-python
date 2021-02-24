@@ -1,0 +1,18 @@
+connect package
+===============
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   connect.MySqlConnectionResolver
+
+Module contents
+---------------
+
+.. automodule:: connect
+   :members:
+   :undoc-members:
+   :show-inheritance:

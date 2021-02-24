@@ -1,0 +1,21 @@
+persistence package
+===================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   persistence.IdentifiableJsonMySqlPersistence
+   persistence.IdentifiableMySqlPersistence
+   persistence.MySqlConnection
+   persistence.MySqlPersistence
+
+Module contents
+---------------
+
+.. automodule:: persistence
+   :members:
+   :undoc-members:
+   :show-inheritance:

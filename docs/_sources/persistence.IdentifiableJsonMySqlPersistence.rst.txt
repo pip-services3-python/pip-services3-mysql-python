@@ -1,0 +1,7 @@
+persistence.IdentifiableJsonMySqlPersistence module
+===================================================
+
+.. automodule:: persistence.IdentifiableJsonMySqlPersistence
+   :members:
+   :undoc-members:
+   :show-inheritance:
