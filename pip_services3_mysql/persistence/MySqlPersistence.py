@@ -460,6 +460,9 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             query += " WHERE " + filter
 
         if sort:
+            query += " ORDER BY " + sort
+
+        if skip >= 0:
             query += " OFFSET " + str(skip)
 
         query += " LIMIT " + str(take)
@@ -533,7 +536,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if items:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
 
-        items = map(self._convert_to_public, items)
+        items = list(map(self._convert_to_public, items))
 
         return items
 

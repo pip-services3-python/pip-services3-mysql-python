@@ -107,8 +107,9 @@ class IdentifiableMySqlPersistence(IIdentifiable, MySqlPersistence):
         result = self._client.query(query, ids)
         items = result['items']
 
-        if not items:
+        if items is not None:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
+            
         items = list(map(self._convert_from_public_partial, items))
         return items
 
