@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import urllib.parse as urlparse
+from typing import Any, Union, Optional
 
 import mysql.connector
 from mysql.connector import pooling
 from pip_services3_commons.config import IConfigurable, ConfigParams
 from pip_services3_commons.errors import ConnectionException
-from pip_services3_commons.refer import IReferenceable
+from pip_services3_commons.refer import IReferenceable, IReferences
 from pip_services3_commons.run import IOpenable
 from pip_services3_components.log import CompositeLogger
 
@@ -41,25 +42,25 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
         - `*:credential-store:*:*:1.0` (optional) :class:`ICredentialStore <pip_services3_components.auth.ICredentialStore.ICredentialStore>` stores to resolve credentials
     """
 
-    __default_config = ConfigParams.from_tuples(
-        "options.connect_timeout", 0,
-        "options.idle_timeout", 10000,
-        "options.max_pool_size", 3
-    )
-
     def __init__(self):
-        # The logger.
-        self._logger = CompositeLogger()
-        # The connection resolver.
-        self._connection_resolver = MySqlConnectionResolver()
-        # The configuration options.
-        self._options = ConfigParams()
-        # The MySQL connection pool object.
-        self._connection = None
-        # The MySQL database name.
-        self._database_name = None
+        self.__default_config = ConfigParams.from_tuples(
+            "options.connect_timeout", 0,
+            "options.idle_timeout", 10000,
+            "options.max_pool_size", 3
+        )
 
-    def configure(self, config):
+        # The logger.
+        self._logger: CompositeLogger = CompositeLogger()
+        # The connection resolver.
+        self._connection_resolver: MySqlConnectionResolver = MySqlConnectionResolver()
+        # The configuration options.
+        self._options: ConfigParams = ConfigParams()
+        # The MySQL connection pool object.
+        self._connection: Any = None
+        # The MySQL database name.
+        self._database_name: str = None
+
+    def configure(self, config: ConfigParams):
         """
         Configures component by passing configuration parameters.
 
@@ -71,7 +72,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         self._options = self._options.override(config.get_section('options'))
 
-    def set_references(self, references):
+    def set_references(self, references: IReferences):
         """
         Sets references to dependent components.
 
@@ -80,7 +81,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
         self._logger.set_references(references)
         self._connection_resolver.set_references(references)
 
-    def is_opened(self):
+    def is_open(self) -> bool:
         """
         Checks if the component is opened.
 
@@ -88,7 +89,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
         """
         return self._connection is not None
 
-    def __compose_uri_settings(self, uri, return_uri=False):
+    def __compose_uri_settings(self, uri: str, return_uri=False) -> Union[dict, str]:
         max_pool_size = self._options.get_as_nullable_integer('max_pool_size')
         connection_timeout_ms = self._options.get_as_nullable_integer('connect_timeout')
         idle_timeout_ms = self._options.get_as_nullable_integer('idle_timeout')
@@ -127,12 +128,11 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         return uri
 
-    def open(self, correlation_id):
+    def open(self, correlation_id: Optional[str]):
         """
         Opens the component.
 
         :param correlation_id: (optional) transaction id to trace execution through call chain.
-        :return: raise error or None no errors
         """
         try:
             uri = self._connection_resolver.resolve(correlation_id)
@@ -155,7 +155,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
         except Exception as err:
             self._logger.error(correlation_id, err, 'Failed to resolve MySql connection')
 
-    def close(self, correlation_id):
+    def close(self, correlation_id: Optional[str]):
         """
         Closes component and frees used resources.
 
@@ -174,8 +174,8 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
         self._connection = None
         self._database_name = None
 
-    def get_connection(self):
+    def get_connection(self) -> Any:
         return self._connection
 
-    def get_database_name(self):
+    def get_database_name(self) -> str:
         return self._database_name

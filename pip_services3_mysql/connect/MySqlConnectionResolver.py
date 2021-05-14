@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from typing import List
+from typing import List, Optional
 
 from pip_services3_commons.config import IConfigurable, ConfigParams
 from pip_services3_commons.errors import ConfigException
-from pip_services3_commons.refer import IReferenceable
-from pip_services3_components.auth import CredentialResolver
+from pip_services3_commons.refer import IReferenceable, IReferences
+from pip_services3_components.auth import CredentialResolver, CredentialParams
 from pip_services3_components.connect import ConnectionResolver, ConnectionParams
 
 
@@ -34,11 +34,11 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
 
     def __init__(self):
         # The connections resolver.
-        self._connection_resolver = ConnectionResolver()
+        self._connection_resolver: ConnectionResolver = ConnectionResolver()
         # The credentials resolver.
-        self._credential_resolver = CredentialResolver()
+        self._credential_resolver: CredentialResolver = CredentialResolver()
 
-    def configure(self, config):
+    def configure(self, config: ConfigParams):
         """
         Configures component by passing configuration parameters.
 
@@ -47,7 +47,7 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
         self._connection_resolver.configure(config)
         self._credential_resolver.configure(config)
 
-    def set_references(self, references):
+    def set_references(self, references: IReferences):
         """
         Sets references to dependent components.
 
@@ -56,7 +56,7 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
         self._credential_resolver.set_references(references)
         self._connection_resolver.set_references(references)
 
-    def __validate_connection(self, correlation_id, connection: ConnectionParams):
+    def __validate_connection(self, correlation_id: Optional[str], connection: ConnectionParams):
         uri = connection.get_uri()
         if uri:
             return
@@ -73,18 +73,14 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
         if not database:
             raise ConfigException(correlation_id, "NO_DATABASE", "Connection database is not set")
 
-        return None
-
-    def __validate_connections(self, correlation_id, connections: List[ConnectionParams]):
+    def __validate_connections(self, correlation_id: Optional[str], connections: List[ConnectionParams]):
         if not connections or len(connections) == 0:
             raise ConfigException(correlation_id, "NO_CONNECTION", "Database connection is not set")
 
         for connection in connections:
             self.__validate_connection(correlation_id, connection)
 
-        return None
-
-    def __compose_uri(self, connections: List[ConnectionParams], credential):
+    def __compose_uri(self, connections: List[ConnectionParams], credential: CredentialParams) -> str:
         # If there is a uri then return it immediately
         for connection in connections:
             uri = connection.get_uri()
@@ -129,7 +125,7 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
         options.remove('username')
         options.remove('password')
         params = ''
-        keys = options.get_key_names()
+        keys = options.get_keys()
         for key in keys:
             if len(params) > 0:
                 params += '&'
@@ -148,7 +144,7 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
 
         return uri
 
-    def resolve(self, correlation_id):
+    def resolve(self, correlation_id: Optional[str]):
         """
         Resolves MySQL connection URI from connection and credential parameters.
 

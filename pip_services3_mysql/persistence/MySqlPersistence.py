@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import random
+from typing import Any, Optional, List
 
 from pip_services3_commons.config import IConfigurable, ConfigParams
 from pip_services3_commons.convert import LongConverter
@@ -9,7 +10,7 @@ from pip_services3_commons.refer import IReferenceable, IUnreferenceable, IRefer
 from pip_services3_commons.run import IOpenable, ICleanable
 from pip_services3_components.log import CompositeLogger
 
-from pip_services3_mysql.persistence.MySqlConnection import MySqlConnection
+from pip_services3_mysql.connect.MySqlConnection import MySqlConnection
 
 
 class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenable, ICleanable):
@@ -99,22 +100,22 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         self.__schema_statements = []
 
         # The dependency resolver.
-        self._dependency_resolver = DependencyResolver(self._default_config)
+        self._dependency_resolver: DependencyResolver = DependencyResolver(self._default_config)
         # The logger.
-        self._logger = CompositeLogger()
+        self._logger: CompositeLogger = CompositeLogger()
         # The MySQL connection component.
         self._connection: MySqlConnection = None
         # The MySQL connection pool object.
-        self._client = None
+        self._client: Any = None
         # The MySQL database name.
-        self._database_name = None
+        self._database_name: str = None
         # The MySQL table object.
-        self._table_name = None
+        self._table_name: str = None
         self._max_page_size = 100
 
         self._table_name = table_name
 
-    def configure(self, config):
+    def configure(self, config: ConfigParams):
         """
         Configures component by passing configuration parameters.
 
@@ -129,7 +130,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         self._table_name = config.get_as_string_with_default('table', self._table_name)
         self._max_page_size = config.get_as_string_with_default('options.max_page_size', self._max_page_size)
 
-    def set_references(self, references):
+    def set_references(self, references: IReferences):
         """
         Sets references to dependent components.
 
@@ -154,7 +155,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         """
         self._connection = None
 
-    def __create_connection(self):
+    def __create_connection(self) -> MySqlConnection:
         connection = MySqlConnection()
 
         if self.__config:
@@ -164,7 +165,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return connection
 
-    def _ensure_index(self, name, keys, options=None):
+    def _ensure_index(self, name: str, keys: Any, options: Any = None):
         builder = 'CREATE'
         options = options or {}
 
@@ -189,7 +190,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         self._auto_create_object(builder)
 
-    def _auto_create_object(self, schema_statement):
+    def _auto_create_object(self, schema_statement: str):
         """
         Adds a statement to schema definition.
         This is a deprecated method. Use ensureSchema instead.
@@ -199,7 +200,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         self._ensure_schema(schema_statement)
 
-    def _ensure_schema(self, schema_statement):
+    def _ensure_schema(self, schema_statement: str):
         """
         Adds a statement to schema definition
 
@@ -217,7 +218,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         # Todo: override in chile classes
         self._clear_schema()
 
-    def _convert_to_public(self, value):
+    def _convert_to_public(self, value: Any) -> Any:
         """
         Converts object value from internal to public format.
 
@@ -226,7 +227,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         """
         return value
 
-    def _convert_from_public(self, value):
+    def _convert_from_public(self, value: Any) -> Any:
         """
         Convert object value from public to internal format.
 
@@ -235,14 +236,14 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         """
         return value
 
-    def _quote_identifier(self, value):
+    def _quote_identifier(self, value: str) -> str:
         if value is None or value == '':
-            return value
+            return ''
         if value[0] == '`':
             return value
         return '`' + value + '`'
 
-    def is_opened(self):
+    def is_open(self):
         """
         Checks if the component is opened.
 
@@ -250,7 +251,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         """
         return self.__opened
 
-    def open(self, correlation_id):
+    def open(self, correlation_id: Optional[str]):
         """
         Opens the component.
 
@@ -267,7 +268,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if self.__local_connection:
             self._connection.open(correlation_id)
 
-        if not self._connection.is_opened():
+        if not self._connection.is_open():
             self.__opened = False
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "MySQL connection is not opened")
         else:
@@ -289,7 +290,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
                 raise ConnectionException(correlation_id, "CONNECT_FAILED",
                                           "Connection to mysql failed").with_cause(err)
 
-    def close(self, correlation_id):
+    def close(self, correlation_id: Optional[str]):
         """
         Closes component and frees used resources.
 
@@ -308,7 +309,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         self.__opened = False
         self._client = None
 
-    def __query(self, query, params=None):
+    def __query(self, query: str, params: List[str] = None) -> dict:
         result = {'rowcount': None,
                   'items': [],
                   'column_names': None,
@@ -333,7 +334,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         conn.close()
         return result
 
-    def clear(self, correlation_id):
+    def clear(self, correlation_id: Optional[str]):
         """
         Clears component state.
 
@@ -352,7 +353,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         except Exception as err:
             ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to mysql failed").with_cause(err)
 
-    def _create_schema(self, correlation_id):
+    def _create_schema(self, correlation_id: Optional[str]):
         if not self.__schema_statements or len(self.__schema_statements) == 0:
             return
 
@@ -375,7 +376,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         except Exception as err:
             self._logger.error(correlation_id, err, 'Failed to autocreate database object')
 
-    def _generate_columns(self, values):
+    def _generate_columns(self, values: Any) -> str:
         """
         Generates a list of column names to use in SQL statements like: "column1,column2,column3"
 
@@ -397,7 +398,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return result
 
-    def _generate_parameters(self, values):
+    def _generate_parameters(self, values: Any) -> str:
         """
         Generates a list of value parameters to use in SQL statements like: "$1,$2,$3"
 
@@ -414,7 +415,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return result
 
-    def _generate_set_parameters(self, values):
+    def _generate_set_parameters(self, values: Any) -> str:
         """
         Generates a list of column sets to use in UPDATE statements like: column1=$1,column2=$2
 
@@ -431,10 +432,11 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return result
 
-    def _generate_values(self, values):
+    def _generate_values(self, values: Any) -> List[Any]:
         return list(values.values())
 
-    def get_page_by_filter(self, correlation_id, filter, paging, sort, select):
+    def get_page_by_filter(self, correlation_id: Optional[str], filter: Any, paging: PagingParams,
+                           sort: Any, select: Any) -> DataPage:
         """
         Gets a page of data items retrieved by a given filter and sorted according to sort parameters.
         This method shall be called by a public getPageByFilter method from child class that
@@ -486,7 +488,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         else:
             return DataPage(items)
 
-    def get_count_by_filter(self, correlation_id, filter):
+    def get_count_by_filter(self, correlation_id: Optional[str], filter: Any) -> int:
         """
         Gets a number of data items retrieved by a given filter.
         This method shall be called by a public getCountByFilter method from child class that
@@ -509,7 +511,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return count
 
-    def get_list_by_filter(self, correlation_id, filter, sort, select):
+    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[dict]:
         """
         Gets a list of data items retrieved by a given filter and sorted according to sort parameters.
         This method shall be called by a public getListByFilter method from child class that
@@ -540,7 +542,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return items
 
-    def get_one_random(self, correlation_id, filter):
+    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> dict:
         """
         Gets a random item from items that match to a given filter.
         This method shall be called by a public getOneRandom method from child class that
@@ -576,7 +578,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return self._convert_to_public(item)
 
-    def create(self, correlation_id, item):
+    def create(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
         """
         Creates a data item.
 
@@ -601,7 +603,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         new_item = item
         return new_item
 
-    def delete_by_filter(self, correlation_id, filter):
+    def delete_by_filter(self, correlation_id: Optional[str], filter: Any):
         """
         Deletes data items that match to a given filter.
 

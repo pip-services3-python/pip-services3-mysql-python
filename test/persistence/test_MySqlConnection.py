@@ -4,7 +4,7 @@ import os
 
 from pip_services3_commons.config import ConfigParams
 
-from pip_services3_mysql.persistence.MySqlConnection import MySqlConnection
+from pip_services3_mysql.connect.MySqlConnection import MySqlConnection
 
 
 class TestMySqlConnection:
