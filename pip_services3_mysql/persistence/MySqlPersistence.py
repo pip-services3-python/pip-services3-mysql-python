@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 import random
-from typing import Any, Optional, List
+from typing import Any, Optional, List, TypeVar
 
 from pip_services3_commons.config import IConfigurable, ConfigParams
 from pip_services3_commons.convert import LongConverter
 from pip_services3_commons.data import PagingParams, DataPage
 from pip_services3_commons.errors import ConnectionException, InvalidStateException, ApplicationException
 from pip_services3_commons.refer import IReferenceable, IUnreferenceable, IReferences, DependencyResolver
+from pip_services3_commons.reflect import PropertyReflector
 from pip_services3_commons.run import IOpenable, ICleanable
 from pip_services3_components.log import CompositeLogger
 
 from pip_services3_mysql.connect.MySqlConnection import MySqlConnection
+
+T = TypeVar('T')  # Declare type variable
 
 
 class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenable, ICleanable):
@@ -225,7 +228,10 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param value: an object in internal format to convert.
         :return:  converted object in public format.
         """
-        return value
+        if value is None:
+            return
+
+        return type('object', (object,), value)
 
     def _convert_from_public(self, value: Any) -> Any:
         """
@@ -234,7 +240,9 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param value: an object in public format to convert.
         :return: converted object in internal format.
         """
-        return value
+        if isinstance(value, dict):
+            return value
+        return PropertyReflector.get_properties(value)
 
     def _quote_identifier(self, value: str) -> str:
         if value is None or value == '':
@@ -511,7 +519,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return count
 
-    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[dict]:
+    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[T]:
         """
         Gets a list of data items retrieved by a given filter and sorted according to sort parameters.
         This method shall be called by a public getListByFilter method from child class that
@@ -542,7 +550,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return items
 
-    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> dict:
+    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> T:
         """
         Gets a random item from items that match to a given filter.
         This method shall be called by a public getOneRandom method from child class that
@@ -578,7 +586,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         return self._convert_to_public(item)
 
-    def create(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
+    def create(self, correlation_id: Optional[str], item: T) -> Optional[T]:
         """
         Creates a data item.
 
@@ -595,12 +603,14 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         query = "INSERT INTO " + self._quote_identifier(self._table_name) + " (" + columns + ") VALUES (" + params + ")"
         # query += "; SELECT * FROM " + self._quote_identifier(self._table_name)
-        result = self._client.query(query, values)
+        self._client.query(query, values)
 
         self._logger.trace(correlation_id, "Created in %s with id = %s", self._quote_identifier(self._table_name),
-                           row['id'])
-        # new_item = self._convert_from_public(result['items'][0]) if result['items'] and len(result['items']) == 1 else None
+                           item.id)
+        # new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(result['items']) == 1 else None
+
         new_item = item
+
         return new_item
 
     def delete_by_filter(self, correlation_id: Optional[str], filter: Any):

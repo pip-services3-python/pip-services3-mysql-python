@@ -5,6 +5,7 @@
 ### Features
 * Moved MySQLConnection to **connect** package
 * Added type hints
+* Fixed returned types for operations
 
 ## <a name="3.0.1"></a> 3.0.1 (2021-03-11)
 

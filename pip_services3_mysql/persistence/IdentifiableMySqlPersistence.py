@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
-from typing import Any, Optional, List
+from typing import Any, Optional, List, TypeVar
 
 from pip_services3_commons.data import IdGenerator, AnyValueMap
 
 from pip_services3_mysql.persistence.MySqlPersistence import MySqlPersistence
+
+T = TypeVar('T')  # Declare type variable
 
 
 class IdentifiableMySqlPersistence(MySqlPersistence):
@@ -95,7 +97,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         """
         return self._convert_from_public(value)
 
-    def get_list_by_ids(self, correlation_id: Optional[str], ids: List[Any]) -> List[dict]:
+    def get_list_by_ids(self, correlation_id: Optional[str], ids: List[Any]) -> List[T]:
         """
         Gets a list of data items retrieved by given unique ids.
 
@@ -114,7 +116,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         items = list(map(self._convert_from_public_partial, items))
         return items
 
-    def get_one_by_id(self, correlation_id: Optional[str], id: Any) -> dict:
+    def get_one_by_id(self, correlation_id: Optional[str], id: Any) -> T:
         """
         Gets a data item by its unique id.
 
@@ -133,9 +135,9 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         else:
             self._logger.trace(correlation_id, "Retrieved from %s with id = %s", self._table_name, id)
 
-        return self._convert_to_public(item)
+        return item
 
-    def create(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
+    def create(self, correlation_id: Optional[str], item: T) -> Optional[T]:
         """
         Creates a data item.
 
@@ -147,14 +149,15 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
             return
 
         # Assign unique id
-        new_item = item
-        if new_item['id'] is None:
+        new_item = deepcopy(item)
+
+        if new_item.id is None:
             new_item = deepcopy(new_item)
-            new_item['id'] = item['id'] or IdGenerator.next_long()
+            new_item.id = item.id or IdGenerator.next_long()
 
         return super().create(correlation_id, new_item)
 
-    def set(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
+    def set(self, correlation_id: Optional[str], item: T) -> Optional[T]:
         """
         Sets a data item. If the data item exists it updates it,
         otherwise it create a new data item.
@@ -192,7 +195,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
 
         return new_item
 
-    def update(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
+    def update(self, correlation_id: Optional[str], item: T) -> Optional[T]:
         """
         Updates a data item.
 
@@ -206,21 +209,22 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         row = self._convert_from_public(item)
         params = self._generate_set_parameters(row)
         values = self._generate_values(row)
-        values.append(item['id'])
-        values.append(item['id'])
+        values.append(row['id'])
+        values.append(row['id'])
 
         query = "UPDATE " + self._quote_identifier(self._table_name) + " SET " + params + " WHERE id=%s"
         query += "; SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
 
         result = self._client.query(query, values)
 
-        self._logger.trace(correlation_id, "Updated in %s with id = %s", self._table_name, item['id'])
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
 
+        self._logger.trace(correlation_id, "Updated in %s with id = %s", self._table_name, new_item.id)
+
         return new_item
 
-    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[dict]:
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[T]:
         """
         Updates only few selected fields in a data item.
 
@@ -249,7 +253,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
 
         return new_item
 
-    def delete_by_id(self, correlation_id: Optional[str], id: Any) -> dict:
+    def delete_by_id(self, correlation_id: Optional[str], id: Any) -> T:
         """
         Deleted a data item by it's unique id.
 

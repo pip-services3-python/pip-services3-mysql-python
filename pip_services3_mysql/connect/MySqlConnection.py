@@ -92,13 +92,10 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
     def __compose_uri_settings(self, uri: str, return_uri=False) -> Union[dict, str]:
         max_pool_size = self._options.get_as_nullable_integer('max_pool_size')
         connection_timeout_ms = self._options.get_as_nullable_integer('connect_timeout')
-        idle_timeout_ms = self._options.get_as_nullable_integer('idle_timeout')
 
         settings = {
-            # 'multi': True,
             'pool_size': max_pool_size,
             'connection_timeout': connection_timeout_ms if connection_timeout_ms > 0 else 1000,
-            # 'idleTimeoutMillis': idle_timeout_ms
         }
         if not return_uri:
             parsed_url = urlparse.urlparse(uri)
@@ -144,6 +141,16 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
                                                                    **config)
                 # Try to connect
                 connection_obj = pool.get_connection()
+
+                # set timeout
+                idle_timeout_ms = self._options.get_as_nullable_integer('idle_timeout')
+                if idle_timeout_ms:
+                    cursor = connection_obj.cursor()
+                    cursor.execute(f"SET SESSION MAX_EXECUTION_TIME={idle_timeout_ms}")
+                    connection_obj.commit()
+                    cursor.close()
+                    connection_obj.close()
+
                 if connection_obj:
                     self._connection = pool
                     self._database_name = pool.pool_name.split('_')[-1]  # TODO need get dbname

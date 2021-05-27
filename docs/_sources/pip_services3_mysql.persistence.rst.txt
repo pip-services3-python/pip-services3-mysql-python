@@ -9,7 +9,6 @@ Submodules
 
    pip_services3_mysql.persistence.IdentifiableJsonMySqlPersistence
    pip_services3_mysql.persistence.IdentifiableMySqlPersistence
-   pip_services3_mysql.persistence.MySqlConnection
    pip_services3_mysql.persistence.MySqlPersistence
 
 Module contents

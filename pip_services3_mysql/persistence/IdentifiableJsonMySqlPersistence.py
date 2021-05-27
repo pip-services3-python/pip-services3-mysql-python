@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import json
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 from pip_services3_commons.data import AnyValueMap
 
 from pip_services3_mysql.persistence.IdentifiableMySqlPersistence import IdentifiableMySqlPersistence
+
+T = TypeVar('T')  # Declare type variable
 
 
 class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
@@ -102,7 +104,7 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
         if value is None:
             return None
         try:
-            return json.loads(value['data'])
+            return super()._convert_to_public(json.loads(value['data']))
         except KeyError:
             return super()._convert_to_public(value)
 
@@ -115,13 +117,16 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
         """
         if value is None:
             return None
+
+        value = super()._convert_from_public(value)
+
         result = {
             'id': value['id'],
             'data': json.dumps(value)
         }
         return result
 
-    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[dict]:
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[T]:
         """
         Updates only few selected fields in a data item.
 

@@ -1,7 +1,0 @@
-pip\_services3\_mysql.persistence.MySqlConnection module
-========================================================
-
-.. automodule:: pip_services3_mysql.persistence.MySqlConnection
-   :members:
-   :undoc-members:
-   :show-inheritance:

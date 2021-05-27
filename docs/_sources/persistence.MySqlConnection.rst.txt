@@ -1,7 +1,0 @@
-persistence.MySqlConnection module
-==================================
-
-.. automodule:: persistence.MySqlConnection
-   :members:
-   :undoc-members:
-   :show-inheritance:
