@@ -144,7 +144,7 @@ class MySqlConnectionResolver(IReferenceable, IConfigurable):
 
         return uri
 
-    def resolve(self, correlation_id: Optional[str]):
+    def resolve(self, correlation_id: Optional[str]) -> str:
         """
         Resolves MySQL connection URI from connection and credential parameters.
 
