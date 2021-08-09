@@ -95,7 +95,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         settings = {
             'pool_size': max_pool_size,
-            'connection_timeout': connection_timeout_ms if connection_timeout_ms > 0 else 1000,
+            'connection_timeout': connection_timeout_ms / 1000 if connection_timeout_ms > 0 else 5,
         }
         if not return_uri:
             parsed_url = urlparse.urlparse(uri)

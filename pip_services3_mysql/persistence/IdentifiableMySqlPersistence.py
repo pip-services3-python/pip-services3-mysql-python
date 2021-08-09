@@ -24,7 +24,8 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
     accessing **self._collection** and **self._model** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) MySQL collection name
+        - table:                  (optional) MySQL table name
+        - schema:                 (optional) MySQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -78,15 +79,17 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         # ...
     """
 
-    def __init__(self, table_name: str = None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
         :param table_name: (optional) a table_name name.
+        :param schema_name: (optional) a schema name
         """
-        super(IdentifiableMySqlPersistence, self).__init__(table_name)
-        if not table_name:
-            raise Exception('Table name could not be null')
+        super(IdentifiableMySqlPersistence, self).__init__(table_name, schema_name)
+
+        # Flag to turn on auto generation of object ids.
+        self._auto_generate_id: bool = True
 
     def _convert_from_public_partial(self, value: Any) -> Any:
         """
@@ -106,7 +109,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         :return: data list
         """
         params = self._generate_parameters(ids)
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id IN(" + params + ")"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id IN(" + params + ")"
         result = self._client.query(query, ids)
         items = result['items']
 
@@ -124,7 +127,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         :param id: an id of data item to be retrieved.
         :return: data item
         """
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
         params = [id]
 
         result = self._client.query(query, params)
@@ -151,7 +154,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         # Assign unique id
         new_item = deepcopy(item)
 
-        if new_item.id is None:
+        if new_item.id is None and self._auto_generate_id:
             new_item = deepcopy(new_item)
             new_item.id = item.id or IdGenerator.next_long()
 
@@ -170,7 +173,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
             return
 
         # Assign unique id
-        if item.get('id') is None:
+        if item.get('id') is None and self._auto_generate_id:
             item = deepcopy(item)
             item['id'] = item['id'] or IdGenerator.next_long()
 
@@ -182,16 +185,17 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         values += deepcopy(values)
         values.append(item['id'])
 
-        query = "INSERT INTO " + self._quote_identifier(self._table_name) + " (" + columns + ") VALUES (" + params + ")"
+        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ")"
         query += " ON DUPLICATE KEY UPDATE " + set_params
-        query += "; SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
         result = self._client.query(query, values)
-        self._logger.trace(correlation_id, "Set in %s with id = %s", self._quote_identifier(self._table_name),
-                           item['id'])
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
+
+        self._logger.trace(correlation_id, "Set in %s with id = %s", self._quoted_table_name(),
+                           item.id)
 
         return new_item
 
@@ -212,8 +216,8 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         values.append(row['id'])
         values.append(row['id'])
 
-        query = "UPDATE " + self._quote_identifier(self._table_name) + " SET " + params + " WHERE id=%s"
-        query += "; SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query = "UPDATE " + self._quoted_table_name() + " SET " + params + " WHERE id=%s"
+        query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
         result = self._client.query(query, values)
 
@@ -242,8 +246,8 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         values.append(id)
         values.append(id)
 
-        query = "UPDATE " + self._quote_identifier(self._table_name) + " SET " + params + " WHERE id=%s"
-        query += "; SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query = "UPDATE " + self._quoted_table_name() + " SET " + params + " WHERE id=%s"
+        query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
         result = self._client.query(query, values)
 
@@ -263,8 +267,8 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         """
         values = [id, id]
 
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
-        query += "; DELETE FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
+        query += "; DELETE FROM " + self._quoted_table_name() + " WHERE id=%s"
 
         result = self._client.query(query, values)
 
@@ -283,7 +287,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         :return: None for success
         """
         params = self._generate_parameters(ids)
-        query = "DELETE FROM " + self._quote_identifier(self._table_name) + " WHERE id IN(" + params + ")"
+        query = "DELETE FROM " + self._quoted_table_name() + " WHERE id IN(" + params + ")"
 
         result = self._client.query(query, ids)
         count = result['rowcount'] if result['rowcount'] else 0

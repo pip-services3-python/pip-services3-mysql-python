@@ -26,7 +26,8 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
     accessing **self._db** or **self._collection** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) MySQL collection name
+        - table:                  (optional) MySQL table name
+        - schema:                 (optional) MySQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -75,7 +76,8 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
     """
 
     _default_config = ConfigParams.from_tuples(
-        "collection", None,
+        "table", None,
+        "schema", None,
         "dependencies.connection", "*:connection:mysql:*:1.0",
 
         # connections.*
@@ -89,11 +91,12 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         "options.debug", True
     )
 
-    def __init__(self, table_name=None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
         :param table_name: (optional) a table name.
+        :param schema_name: (optional) a schema name.
         """
         self.__config: ConfigParams = None
         self.__references: IReferences = None
@@ -114,9 +117,11 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         self._database_name: str = None
         # The MySQL table object.
         self._table_name: str = None
-        self._max_page_size = 100
+        # Max number of objects in data pages
+        self._max_page_size: int = 100
 
         self._table_name = table_name
+        self._schema_name = schema_name
 
     def configure(self, config: ConfigParams):
         """
@@ -131,7 +136,8 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         self._table_name = config.get_as_string_with_default('collection', self._table_name)
         self._table_name = config.get_as_string_with_default('table', self._table_name)
-        self._max_page_size = config.get_as_string_with_default('options.max_page_size', self._max_page_size)
+        self._schema_name = config.get_as_string_with_default('schema', self._schema_name)
+        self._max_page_size = config.get_as_integer_with_default('options.max_page_size', self._max_page_size)
 
     def set_references(self, references: IReferences):
         """
@@ -175,8 +181,11 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if options.get('unique'):
             builder += ' UNIQUE'
 
-        # builder += " INDEX IF NOT EXISTS " + self._quote_identifier(name)
-        builder += " INDEX " + self._quote_identifier(name) + " ON " + self._quote_identifier(self._table_name)
+        index_name = self._quote_identifier(name)
+        if self._schema_name is not None:
+            index_name = self._quote_identifier(self._schema_name) + '.' + index_name
+
+        builder += " INDEX " + index_name + " ON " + self._quoted_table_name()
         if options.get('type'):
             builder += " " + options['type']
 
@@ -191,17 +200,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         builder += '(' + fields + ')'
 
-        self._auto_create_object(builder)
-
-    def _auto_create_object(self, schema_statement: str):
-        """
-        Adds a statement to schema definition.
-        This is a deprecated method. Use ensureSchema instead.
-
-        :param schema_statement: a statement to be added to the schema
-        """
-
-        self._ensure_schema(schema_statement)
+        self._ensure_schema(builder)
 
     def _ensure_schema(self, schema_statement: str):
         """
@@ -251,6 +250,16 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             return value
         return '`' + value + '`'
 
+    def _quoted_table_name(self) -> Optional[str]:
+        if self._table_name is None:
+            return None
+
+        builder = self._quote_identifier(self._table_name)
+        if self._schema_name is not None:
+            builder = self._quote_identifier(self._schema_name) + '.' + builder
+
+        return builder
+
     def is_open(self):
         """
         Checks if the component is opened.
@@ -293,7 +302,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
                 self.__opened = True
                 self._logger.debug(correlation_id, "Connected to mysql database %s, collection %s",
                                    self._database_name,
-                                   self._quote_identifier(self._table_name))
+                                   self._table_name)
             except Exception as err:
                 raise ConnectionException(correlation_id, "CONNECT_FAILED",
                                           "Connection to mysql failed").with_cause(err)
@@ -354,7 +363,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if self._table_name is None:
             raise ApplicationException(message='Table name is not defined')
 
-        query = "DELETE FROM " + self._quote_identifier(self._table_name)
+        query = "DELETE FROM " + self._quoted_table_name()
 
         try:
             self._client.query(query)
@@ -366,6 +375,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             return
 
         # Check if table exist to determine weither to auto create objects
+        # Todo: include schema
         query = "SHOW TABLES LIKE '" + self._table_name + "'"
 
         result = self._client.query(query)
@@ -455,10 +465,10 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param paging: (optional) paging parameters
         :param sort: (optional) sorting JSON object
         :param select: (optional) projection JSON object
-        :return: a data page or error
+        :return: a data page or raise error
         """
         select = select if select and len(select) > 0 else '*'
-        query = "SELECT " + select + " FROM " + self._quote_identifier(self._table_name)
+        query = "SELECT " + select + " FROM " + self._quoted_table_name()
 
         # Adjust max item count based on configuration
         paging = paging or PagingParams()
@@ -486,7 +496,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         items = list(map(self._convert_to_public, items))
 
         if paging_enabled:
-            query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+            query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
             if filter is not None and filter != '':
                 query += " WHERE " + filter
             result = self._client.query(query)
@@ -506,7 +516,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param filter: (optional) a filter JSON object
         :return: a data page or error
         """
-        query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+        query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
@@ -533,8 +543,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         """
 
         select = select if len(select) > 0 else '*'
-        query = "SELECT " + select + " FROM " + self._quote_identifier(self._table_name)
-
+        query = "SELECT " + select + " FROM " + self._quoted_table_name()
         if filter and filter != '':
             query += " WHERE " + filter
 
@@ -560,14 +569,14 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param filter: (optional) a filter JSON object
         :return: a random item
         """
-        query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+        query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
 
         result = self._client.query(query)
 
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name)
+        query = "SELECT * FROM " + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
@@ -601,11 +610,11 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         params = self._generate_parameters(row)
         values = self._generate_values(row)
 
-        query = "INSERT INTO " + self._quote_identifier(self._table_name) + " (" + columns + ") VALUES (" + params + ")"
-        # query += "; SELECT * FROM " + self._quote_identifier(self._table_name)
+        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ")"
+        # query += "; SELECT * FROM " + self._quoted_table_name()
         self._client.query(query, values)
 
-        self._logger.trace(correlation_id, "Created in %s with id = %s", self._quote_identifier(self._table_name),
+        self._logger.trace(correlation_id, "Created in %s with id = %s", self._quoted_table_name(),
                            item.id)
         # new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(result['items']) == 1 else None
 
@@ -621,7 +630,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :param filter: (optional) a filter JSON object.
         :return: null for success
         """
-        query = "DELETE FROM " + self._quote_identifier(self._table_name)
+        query = "DELETE FROM " + self._quoted_table_name()
         if filter and filter != '':
             query += " WHERE " + filter
 

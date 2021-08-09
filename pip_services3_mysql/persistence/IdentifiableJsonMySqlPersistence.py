@@ -26,7 +26,8 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
     accessing **self._collection** and **self._model** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) MySQL collection name
+        - table:                  (optional) MySQL table name
+        - schema:                 (optional) MySQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -81,18 +82,24 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
         
     """
 
-    def __init__(self, table_name: str = None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
         :param table_name: (optional) a table_name name.
+        :param schema_name: (optional) a schema name.
         """
-        super(IdentifiableJsonMySqlPersistence, self).__init__(table_name)
+        super(IdentifiableJsonMySqlPersistence, self).__init__(table_name, schema_name)
 
     def _ensure_table(self, id_type: str = 'VARCHAR(32)', data_type: str = 'JSON'):
-        query = "CREATE TABLE IF NOT EXISTS " + self._quote_identifier(
-            self._table_name) + " (`id` " + id_type + " PRIMARY KEY, `data` " + data_type + ")"
-        self._auto_create_object(query)
+        if self._schema_name is not None:
+            query = "CREATE SCHEMA IF NOT EXISTS " + self._quote_identifier(self._schema_name)
+            self._ensure_schema(query)
+
+        query = "CREATE TABLE IF NOT EXISTS " + self._quoted_table_name() \
+                + " (`id` " + id_type + " PRIMARY KEY, `data` " + data_type + ")"
+
+        self._ensure_schema(query)
 
     def _convert_to_public(self, value: Any) -> Any:
         """
@@ -138,9 +145,8 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
         if data is None or id is None:
             return
 
-        query = "UPDATE " + self._quote_identifier(
-            self._table_name) + " SET `data`=JSON_MERGE_PATCH(data,%s) WHERE id=%s"
-        query += "; SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE id=%s"
+        query = "UPDATE " + self._quoted_table_name() + " SET `data`=JSON_MERGE_PATCH(data,%s) WHERE id=%s"
+        query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
         values = [json.dumps(data), id, id]
 
         result = self._client.query(query, values)
