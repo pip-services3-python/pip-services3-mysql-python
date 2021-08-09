@@ -8,18 +8,18 @@
 """
 
 from pip_services3_commons.data import AnyValueMap
-from test.fixtures.IDummyPersistence import IDummyPersistence
 
-from .Dummy import Dummy
+from .Dummy2 import Dummy2
+from .IDummy2Persistence import IDummy2Persistence
 
-DUMMY1 = Dummy(None, 'Key 1', 'Content 1')
-DUMMY2 = Dummy(None, 'Key 2', 'Content 2')
+DUMMY1 = Dummy2(1, 'Key 1', 'Content 1')
+DUMMY2 = Dummy2(2, 'Key 2', 'Content 2')
 
 
-class DummyPersistenceFixture:
-    _persistence: IDummyPersistence = None
+class Dummy2PersistenceFixture:
+    _persistence: IDummy2Persistence = None
 
-    def __init__(self, persistence: IDummyPersistence):
+    def __init__(self, persistence: IDummy2Persistence):
         self._persistence = persistence
 
     def test_crud_operations(self):

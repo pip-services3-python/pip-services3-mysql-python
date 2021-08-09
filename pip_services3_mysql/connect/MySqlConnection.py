@@ -95,7 +95,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         settings = {
             'pool_size': max_pool_size,
-            'connection_timeout': connection_timeout_ms / 1000 if connection_timeout_ms > 0 else 5,
+            'connection_timeout': int(connection_timeout_ms / 1000) if connection_timeout_ms > 0 else 0,
         }
         if not return_uri:
             parsed_url = urlparse.urlparse(uri)
@@ -131,36 +131,33 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         :param correlation_id: (optional) transaction id to trace execution through call chain.
         """
+
+        uri = self._connection_resolver.resolve(correlation_id)
+        self._logger.debug(correlation_id, "Connecting to MySQL...")
+
         try:
-            uri = self._connection_resolver.resolve(correlation_id)
-            self._logger.debug(correlation_id, "Connecting to mysql")
+            config = self.__compose_uri_settings(uri)
+            pool = mysql.connector.pooling.MySQLConnectionPool(pool_size=config.pop('pool_size'),
+                                                               **config)
+            # Try to connect
+            connection_obj = pool.get_connection()
 
-            try:
-                config = self.__compose_uri_settings(uri)
-                pool = mysql.connector.pooling.MySQLConnectionPool(pool_size=config.pop('pool_size'),
-                                                                   **config)
-                # Try to connect
-                connection_obj = pool.get_connection()
+            # set timeout
+            idle_timeout_ms = self._options.get_as_nullable_integer('idle_timeout')
+            if idle_timeout_ms:
+                cursor = connection_obj.cursor()
+                cursor.execute(f"SET SESSION MAX_EXECUTION_TIME={idle_timeout_ms}")
+                connection_obj.commit()
+                cursor.close()
 
-                # set timeout
-                idle_timeout_ms = self._options.get_as_nullable_integer('idle_timeout')
-                if idle_timeout_ms:
-                    cursor = connection_obj.cursor()
-                    cursor.execute(f"SET SESSION MAX_EXECUTION_TIME={idle_timeout_ms}")
-                    connection_obj.commit()
-                    cursor.close()
-                    connection_obj.close()
+            self._connection = pool
+            self._database_name = pool.pool_name.split('_')[-1]
 
-                if connection_obj:
-                    self._connection = pool
-                    self._database_name = pool.pool_name.split('_')[-1]  # TODO need get dbname
-                    connection_obj.close()
-            except Exception as err:
-                raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to mysql failed").with_cause(
-                    err)
+            connection_obj.close()
 
         except Exception as err:
-            self._logger.error(correlation_id, err, 'Failed to resolve MySql connection')
+            raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to MySQL failed").with_cause(
+                err)
 
     def close(self, correlation_id: Optional[str]):
         """

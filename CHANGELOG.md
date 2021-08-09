@@ -9,6 +9,9 @@ Added support for database schemas
 * Added schemas to MySqlPersistence, IdentifiableMySqlPersistence, IdentifiableJsonMySqlPersistence
 * Added _auto_generate_id flag to IdentifiableMySqlPersistence
 
+### Bug fixes
+* Fixed MySQLConnection open error logging
+
 ## <a name="3.1.0"></a> 3.1.0 (2021-05-14)
 
 ### Features
