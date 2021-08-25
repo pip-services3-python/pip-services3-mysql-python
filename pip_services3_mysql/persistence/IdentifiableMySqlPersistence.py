@@ -110,7 +110,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         """
         params = self._generate_parameters(ids)
         query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id IN(" + params + ")"
-        result = self._client.query(query, ids)
+        result = self._request(query, ids)
         items = result['items']
 
         if items is not None:
@@ -130,7 +130,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
         params = [id]
 
-        result = self._client.query(query, params)
+        result = self._request(query, params)
         item = self._convert_to_public(result['items'][0]) if result['items'] and len(result['items']) == 1 else None
 
         if not item:
@@ -189,7 +189,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         query += " ON DUPLICATE KEY UPDATE " + set_params
         query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
@@ -219,7 +219,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         query = "UPDATE " + self._quoted_table_name() + " SET " + params + " WHERE id=%s"
         query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
@@ -249,7 +249,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         query = "UPDATE " + self._quoted_table_name() + " SET " + params + " WHERE id=%s"
         query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         self._logger.trace(correlation_id, "Updated partially in %s with id = %s", self._table_name, id)
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
@@ -270,7 +270,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         query = "SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
         query += "; DELETE FROM " + self._quoted_table_name() + " WHERE id=%s"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         self._logger.trace(correlation_id, "Deleted from %s with id = %s", self._table_name, id)
         deleted_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
@@ -289,6 +289,6 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         params = self._generate_parameters(ids)
         query = "DELETE FROM " + self._quoted_table_name() + " WHERE id IN(" + params + ")"
 
-        result = self._client.query(query, ids)
+        result = self._request(query, ids)
         count = result['rowcount'] if result['rowcount'] else 0
         self._logger.trace(correlation_id, "Deleted %d items from %s", count, self._table_name)

@@ -290,7 +290,6 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "MySQL connection is not opened")
         else:
             self._client = self._connection.get_connection()
-            self._client.query = self.__query
             self._database_name = self._connection.get_database_name()
 
             # Define database schema
@@ -326,7 +325,14 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         self.__opened = False
         self._client = None
 
-    def __query(self, query: str, params: List[str] = None) -> dict:
+    def _request(self, query: str, params: List[str] = None) -> dict:
+        """
+        Performs a request to the database.
+
+        :param query: string with sql query to database
+        :param params: optional list of query parameters
+        :return: result of the query
+        """
         result = {'rowcount': None,
                   'items': [],
                   'column_names': None,
@@ -366,7 +372,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         query = "DELETE FROM " + self._quoted_table_name()
 
         try:
-            self._client.query(query)
+            self._request(query)
         except Exception as err:
             ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to mysql failed").with_cause(err)
 
@@ -378,7 +384,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         # Todo: include schema
         query = "SHOW TABLES LIKE '" + self._table_name + "'"
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         # If table already exists then exit
         if result['items'] and len(result['items']) > 0:
@@ -390,7 +396,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         # Run all DML commands
         try:
             for dlm in self.__schema_statements:
-                self._client.query(dlm)
+                self._request(dlm)
         except Exception as err:
             self._logger.error(correlation_id, err, 'Failed to autocreate database object')
 
@@ -487,7 +493,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         query += " LIMIT " + str(take)
 
-        result = self._client.query(query)
+        result = self._request(query)
         items = result['items']
 
         if items is not None:
@@ -499,7 +505,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
             if filter is not None and filter != '':
                 query += " WHERE " + filter
-            result = self._client.query(query)
+            result = self._request(query)
             count = LongConverter.to_long(len(result['items'][0])) if result and len(result['items']) == 1 else 0
 
             return DataPage(items, count)
@@ -521,7 +527,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
         count = LongConverter.to_long(len(result['items'][0])) if result and len(result['items']) == 1 else 0
 
         if count:
@@ -550,7 +556,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if sort:
             query += " ORDER BY " + sort
 
-        items = self._client.query(query)
+        items = self._request(query)
 
         if items:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
@@ -574,7 +580,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         query = "SELECT * FROM " + self._quoted_table_name()
 
@@ -585,7 +591,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         pos = random.randint(0, count - 1)
         query += f" OFFSET {pos} LIMIT 1"
 
-        result = self._client.query(query)
+        result = self._request(query)
         item = result['items'][0] if result['items'] is not None and len(result['items']) > 0 else None
 
         if item:
@@ -612,7 +618,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ")"
         # query += "; SELECT * FROM " + self._quoted_table_name()
-        self._client.query(query, values)
+        self._request(query, values)
 
         self._logger.trace(correlation_id, "Created in %s with id = %s", self._quoted_table_name(),
                            item.id)
@@ -634,7 +640,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         count = result['rowcount'] if result['rowcount'] else 0
 

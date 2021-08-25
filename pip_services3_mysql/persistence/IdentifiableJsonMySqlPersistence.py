@@ -149,7 +149,7 @@ class IdentifiableJsonMySqlPersistence(IdentifiableMySqlPersistence):
         query += "; SELECT * FROM " + self._quoted_table_name() + " WHERE id=%s"
         values = [json.dumps(data), id, id]
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
         self._logger.trace(correlation_id, "Updated partially in %s with id = %s", self._table_name, id)
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
