@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name='pip_services3_mysql',
-    version='3.2.1',
+    version='3.2.2',
     url='http://github.com/pip-services3-python/pip-services3-mysql-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',
@@ -36,12 +36,10 @@ setup(
     zip_safe=True,
     platforms='any',
     install_requires=[
-        'iso8601',
-        'PyYAML',
         'mysql-connector-python',
-        'pip_services3_commons',
-        'pip_services3_components',
-        'pip_services3_data'
+        'pip-services3-commons >= 3.3.9, < 4.0',
+        'pip-services3-components >= 3.5.0, < 4.0',
+        'pip_services3_data >= 3.2.3, < 4.0'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

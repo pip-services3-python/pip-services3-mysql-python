@@ -1,10 +1,6 @@
-iso8601
-PyYAML
-pystache
 pytest
-pytz
 mysql-connector-python
 
-pip_services3_commons
-pip_services3_components
-pip_services3_data
+pip-services3-commons >= 3.3.9, < 4.0
+pip-services3-components >= 3.5.0, < 4.0
+pip_services3_data >= 3.2.3, < 4.0

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import time
 import urllib.parse as urlparse
 from typing import Any, Union, Optional
 
@@ -95,7 +95,7 @@ class MySqlConnection(IReferenceable, IConfigurable, IOpenable):
 
         settings = {
             'pool_size': max_pool_size,
-            'connection_timeout': int(connection_timeout_ms / 1000) if connection_timeout_ms > 0 else 0,
+            'connection_timeout': int(connection_timeout_ms / 1000) if connection_timeout_ms > 0 else 3,
         }
         if not return_uri:
             parsed_url = urlparse.urlparse(uri)
