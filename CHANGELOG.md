@@ -1,6 +1,6 @@
 # <img src="https://uploads-ssl.webflow.com/5ea5d3315186cf5ec60c3ee4/5edf1c94ce4c859f2b188094_logo.svg" alt="Pip.Services Logo" width="200"> <br/> MySQL components for Python Changelog
 
-## <a name="3.2.2"></a> 3.2.2 (2021-11-22)
+## <a name="3.2.2-3.2.3"></a> 3.2.2-3.2.3 (2021-11-22)
 
 ### Bug fixes
 * Updated requirements
@@ -9,7 +9,7 @@
 
 ## <a name="3.2.1"></a> 3.2.1 (2021-08-25)
 
-### Features
+### Featuresquit
 * Added _request method for PostgresPersistence
 
 ## <a name="3.2.0"></a> 3.2.0 (2021-08-09)

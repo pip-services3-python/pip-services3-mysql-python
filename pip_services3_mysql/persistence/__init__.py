@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ['IdentifiableMySqlPersistence', 'IdentifiableMySqlPersistence', 'MySqlConnection']
+__all__ = ['IdentifiableMySqlPersistence', 'IdentifiableMySqlPersistence', 'MySqlPersistence']
 
 from .IdentifiableJsonMySqlPersistence import IdentifiableJsonMySqlPersistence
 from .IdentifiableMySqlPersistence import IdentifiableMySqlPersistence
-from .MySqlPersistence import MySqlConnection
+from .MySqlPersistence import MySqlPersistence
