@@ -3,7 +3,8 @@
 ## <a name="3.2.4"></a> 3.2.4 (2021-11-25)
 
 ### Bug fixes
-**persistence** fixed get_one_random
+* Fixed get_one_random method
+* Fixed get_list_by_filter method
 
 ## <a name="3.2.2-3.2.3"></a> 3.2.2-3.2.3 (2021-11-22)
 

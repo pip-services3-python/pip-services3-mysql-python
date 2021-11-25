@@ -548,7 +548,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         :return: a data list
         """
 
-        select = select if len(select) > 0 else '*'
+        select = select if select and len(select) > 0 else '*'
         query = "SELECT " + select + " FROM " + self._quoted_table_name()
         if filter and filter != '':
             query += " WHERE " + filter
@@ -556,7 +556,8 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if sort:
             query += " ORDER BY " + sort
 
-        items = self._request(query)
+        result = self._request(query)
+        items = result['items']
 
         if items:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
