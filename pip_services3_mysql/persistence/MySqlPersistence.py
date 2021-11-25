@@ -488,10 +488,10 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if sort:
             query += " ORDER BY " + sort
 
+        query += " LIMIT " + str(take)
+        
         if skip >= 0:
             query += " OFFSET " + str(skip)
-
-        query += " LIMIT " + str(take)
 
         result = self._request(query)
         items = result['items']
@@ -588,8 +588,10 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
             query += " WHERE " + filter
 
         count = len(result['items'][0]) if result['items'] and len(result['items']) == 1 else 0
-        pos = random.randint(0, count - 1)
-        query += f" OFFSET {pos} LIMIT 1"
+        count = 0 if count == 0 else count - 1 
+        
+        pos = random.randint(0, count)
+        query += f" LIMIT 1 OFFSET {pos}"
 
         result = self._request(query)
         item = result['items'][0] if result['items'] is not None and len(result['items']) > 0 else None
