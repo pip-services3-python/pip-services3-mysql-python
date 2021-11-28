@@ -116,7 +116,7 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         if items is not None:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
 
-        items = list(map(self._convert_from_public_partial, items))
+        items = list(map(self._convert_to_public, items))
         return items
 
     def get_one_by_id(self, correlation_id: Optional[str], id: Any) -> T:
