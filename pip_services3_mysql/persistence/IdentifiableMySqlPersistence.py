@@ -224,7 +224,8 @@ class IdentifiableMySqlPersistence(MySqlPersistence):
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
 
-        self._logger.trace(correlation_id, "Updated in %s with id = %s", self._table_name, new_item.id)
+        if new_item:
+            self._logger.trace(correlation_id, "Updated in %s with id = %s", self._table_name, new_item.id)
 
         return new_item
 
