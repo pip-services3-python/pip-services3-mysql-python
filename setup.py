@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name='pip_services3_mysql',
-    version='3.2.5',
+    version='3.2.6',
     url='http://github.com/pip-services3-python/pip-services3-mysql-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',
