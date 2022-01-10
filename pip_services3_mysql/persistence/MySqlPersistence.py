@@ -588,7 +588,7 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
         if filter and filter != '':
             query += " WHERE " + filter
 
-        count = len(result['items'][0]) if result['items'] and len(result['items']) == 1 else 0
+        count = result['items'][0].get('count') if result['items'] and len(result['items']) == 1 else 0
         count = 0 if count == 0 else count - 1 
         
         pos = random.randint(0, count)
