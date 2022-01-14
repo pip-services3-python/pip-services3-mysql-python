@@ -150,9 +150,9 @@ class MySqlPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenabl
 
         # Get connection
         self._dependency_resolver.set_references(references)
-        self._connection = self._dependency_resolver.get_one_required('connection')
+        self._connection = self._dependency_resolver.get_one_optional('connection')
         # Or create a local one
-        if self._connection is None:
+        if not self._connection:
             self._connection = self.__create_connection()
             self.__local_connection = True
         else:
