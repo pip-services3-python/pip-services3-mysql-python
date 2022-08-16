@@ -1,6 +1,14 @@
 {
-    "name": "pip_services3_mysql",
-    "registry": "pipdevs",
+    "name":  "pip_services3_mysql",
+    "type": "module",
+    "language": "python",
     "version": "3.2.8",
-    "build": 0
+    "build": 0,
+    "registry": "pipdevs",
+    "artifacts": [
+        {
+            "name":  "<name>",
+            "type": "pypi"
+        }
+    ]
 }
