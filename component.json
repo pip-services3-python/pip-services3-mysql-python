@@ -1,5 +1,5 @@
 {
-    "name":  "pip_services3_mysql",
+    "name":  "pip-services3-mysql",
     "type": "module",
     "language": "python",
     "version": "3.2.8",
